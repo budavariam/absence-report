@@ -1,9 +1,9 @@
-// Abscence report calendars, that follow the format: `FULL NAME - REASON`
+// Absence report calendars, that follow the format: `FULL NAME - REASON`
 const SOURCE_CALENDARS = {
-  '[Abscence]': 'ADD_CALENDAR_ID_HERE',
+  '[Absence]': 'ADD_CALENDAR_ID_HERE',
 };
 
-// Team members whose abscence we want to get notified of
+// Team members whose absence we want to get notified of
 const PEOPLE = [
   { name: "Budavári Mátyás", nick: "Mátyás", team: "M" },
   // Add more users below
@@ -18,9 +18,9 @@ const NOTIFICATION_MAIL_ADDRESSES = [
 const DAYS_TO_SYNC = 5;
 const EVENT_END_DATE_SHOULD_BE_INCLUDED = false
 // Prefix of mail subject
-const EMAIL_SUBJECT = `Abscence report`
+const EMAIL_SUBJECT = `Absence report`
 // Name that should appear as sender
-const SENDER_NAME = "Abscence Report Bot"
+const SENDER_NAME = "Absence Report Bot"
 
 // ----------------------------------------------------------------------------
 // DO NOT TOUCH FROM HERE ON
@@ -61,9 +61,9 @@ function getEndDate(endDate) {
   return dateToYMD(dayDiff(endDate, EVENT_END_DATE_SHOULD_BE_INCLUDED ? -1 : 0))
 }
 
-/** Return the list of users with their abscence records for the next time period */
-function getAbscenceEvents(startTime, endTime) {
-  const teamAbscence = []
+/** Return the list of users with their absence records for the next time period */
+function getAbsenceEvents(startTime, endTime) {
+  const teamAbsence = []
   for (let calendarName in SOURCE_CALENDARS) {
     const calendarId = SOURCE_CALENDARS[calendarName];
     const calendarToCopy = CalendarApp.getCalendarById(calendarId);
@@ -97,30 +97,30 @@ function getAbscenceEvents(startTime, endTime) {
           team: person.team,
           start: event.start.date,
           end: getEndDate(event.end.date),
-          abscences: [],
+          absences: [],
         }
         for (let i = 0; i < DAYS_TO_SYNC; i++) {
           const curr = dateToYMD(dayDiff(startTime, i))
           const abscent = betweenDateStrings(curr, record.start, record.end)
           console.log("Debug:", curr, record)
-          record.abscences[i] = abscent
+          record.absences[i] = abscent
           if (abscent) {
             console.log(`${record.nick} is on vacation on ${curr}`)
           }
         }
-        // TODO: should have only one record for users with multiple abscences in a single time period
-        teamAbscence.push(record)
+        // TODO: should have only one record for users with multiple absences in a single time period
+        teamAbsence.push(record)
       }
     });
   }
-  console.log("Calculated Report:", teamAbscence)
-  return teamAbscence;
+  console.log("Calculated Report:", teamAbsence)
+  return teamAbsence;
 }
 
-/** get the HTML content of the email message about the abscence report */
-function formatEmail(startTime, abscences) {
+/** get the HTML content of the email message about the absence report */
+function formatEmail(startTime, absences) {
   let description = []
-  if (abscences.length === 0) {
+  if (absences.length === 0) {
     description = [
       "The team is fully operating in this time period!"
     ]
@@ -137,10 +137,10 @@ function formatEmail(startTime, abscences) {
       `  <tr>${header.map(item => `<td>${item}</td>`).join("")}</tr>`,
       `</thead>`,
       `<tbody>`,
-      abscences.map(line => [
+      absences.map(line => [
         "<tr>",
         `<td>${line.nick}</td>`,
-        line.abscences.map((isAbscent) => `<td style="background-color:${isAbscent ? "yellow" : "green"}">${isAbscent ? "." : ""}</td>`).join(""),
+        line.absences.map((isAbscent) => `<td style="background-color:${isAbscent ? "yellow" : "green"}">${isAbscent ? "." : ""}</td>`).join(""),
         "</tr>"
       ].join("")).join(""),
       `</tbody>`,
@@ -148,7 +148,7 @@ function formatEmail(startTime, abscences) {
     ].join("")
 
     description = [
-      "Here is the team abscence report for the next time period.",
+      "Here is the team absence report for the next time period.",
       "Yellow is vacation, Green is back on track.",
       htmlTable,
     ]
@@ -162,8 +162,8 @@ function formatEmail(startTime, abscences) {
 }
 
 /** Send email notifications */
-function sendEmailNotifications(startTime, endTime, abscences) {
-  const message = formatEmail(startTime, abscences)
+function sendEmailNotifications(startTime, endTime, absences) {
+  const message = formatEmail(startTime, absences)
   console.log("Message", message)
   const subject = EMAIL_SUBJECT + ` (${dateToYMD(startTime)} - ${getEndDate(endTime)})`
   console.log(`You can send ${MailApp.getRemainingDailyQuota()} mails today.`)
@@ -178,10 +178,10 @@ function sendEmailNotifications(startTime, endTime, abscences) {
 }
 
 /** App entry point */
-function SendAbscenceReport() {
+function SendAbsenceReport() {
   const startTime = new Date();
   startTime.setHours(0, 0, 0, 0);
   const endTime = dayDiff(startTime, DAYS_TO_SYNC)
-  const abscences = getAbscenceEvents(startTime, endTime)
-  sendEmailNotifications(startTime, endTime, abscences)
+  const absences = getAbsenceEvents(startTime, endTime)
+  sendEmailNotifications(startTime, endTime, absences)
 }
