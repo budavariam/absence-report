@@ -1,6 +1,6 @@
-# Abscence Report
+# Absence Report
 
-I have access to google calendar, that contains the abscence of all my colleagues as full day events.
+I have access to google calendar, that contains the absence of all my colleagues as full day events.
 I work with a mostly remote team, and sometimes it's useful to know when will my teammates leave for vacation,
 even if they don't tell me many days in advance.
 
