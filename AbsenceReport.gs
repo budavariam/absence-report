@@ -58,7 +58,7 @@ function betweenDateStrings(checkDateStr, fromDateStr, toDateStr) {
 
 /** In our calendar endDate is nonInclusive, but we might need it */
 function getEndDate(endDate) {
-  return dateToYMD(dayDiff(endDate, EVENT_END_DATE_SHOULD_BE_INCLUDED ? -1 : 0))
+  return dateToYMD(dayDiff(endDate, EVENT_END_DATE_SHOULD_BE_INCLUDED ? 0 : -1))
 }
 
 /** Return the list of users with their absence records for the next time period */
