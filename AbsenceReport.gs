@@ -18,7 +18,7 @@ const NOTIFICATION_MAIL_ADDRESSES = [
 const DAYS_TO_SYNC = 5;
 const EVENT_END_DATE_SHOULD_BE_INCLUDED = false
 // Prefix of mail subject
-const EMAIL_SUBJECT = `Absence report`
+const EMAIL_SUBJECT = `Absence Report`
 // Name that should appear as sender
 const SENDER_NAME = "Absence Report Bot"
 
@@ -63,7 +63,7 @@ function getEndDate(endDate) {
 
 /** Return the list of users with their absence records for the next time period */
 function getAbsenceEvents(startTime, endTime) {
-  const teamAbsence = []
+  const teamAbsence = {}
   for (let calendarName in SOURCE_CALENDARS) {
     const calendarId = SOURCE_CALENDARS[calendarName];
     const calendarToCopy = CalendarApp.getCalendarById(calendarId);
@@ -91,30 +91,29 @@ function getAbsenceEvents(startTime, endTime) {
       if (name in NAME_LIST_MAP) {
         // Only get those users who we listed in NAME_LIST_MAP
         const person = PEOPLE[NAME_LIST_MAP[name]]
-        const record = {
-          name: person.name,
-          nick: person.nick,
-          team: person.team,
-          start: event.start.date,
-          end: getEndDate(event.end.date),
-          absences: [],
-        }
+        const record = teamAbsence[person.name]
+          ? teamAbsence[person.name]
+          : {
+            ...person,
+            absences: [],
+          }
         for (let i = 0; i < DAYS_TO_SYNC; i++) {
           const curr = dateToYMD(dayDiff(startTime, i))
-          const abscent = betweenDateStrings(curr, record.start, record.end)
+          const isAbsent = betweenDateStrings(curr, event.start.date, event.end.date)
           console.log("Debug:", curr, record)
-          record.absences[i] = abscent
-          if (abscent) {
+          record.absences[i] = record.absences[i]
+            ? record.absences[i]
+            : isAbsent
+          if (isAbsent) {
             console.log(`${record.nick} is on vacation on ${curr}`)
           }
         }
-        // TODO: should have only one record for users with multiple absences in a single time period
-        teamAbsence.push(record)
+        teamAbsence[person.name] = record
       }
     });
   }
   console.log("Calculated Report:", teamAbsence)
-  return teamAbsence;
+  return Object.values(teamAbsence);
 }
 
 /** get the HTML content of the email message about the absence report */
@@ -140,7 +139,7 @@ function formatEmail(startTime, absences) {
       absences.map(line => [
         "<tr>",
         `<td>${line.nick}</td>`,
-        line.absences.map((isAbscent) => `<td style="background-color:${isAbscent ? "yellow" : "green"}">${isAbscent ? "." : ""}</td>`).join(""),
+        line.absences.map((isAbsent) => `<td style="background-color:${isAbsent ? "yellow" : "green"}">${isAbsent ? "." : ""}</td>`).join(""),
         "</tr>"
       ].join("")).join(""),
       `</tbody>`,
