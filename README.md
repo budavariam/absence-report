@@ -4,7 +4,7 @@ I have access to google calendar, that contains the absence of all my colleagues
 I work with a mostly remote team, and sometimes it's useful to know when will my teammates leave for vacation,
 even if they don't tell me many days in advance.
 
-I wrote a simple script, to look through the envetsn and filter the ones I'm interested in, and send me an email report every monday.
+I wrote a simple script, to look through the events every monday and filter the ones I'm interested in, then send me an email report.
 
 ## Getting started
 
