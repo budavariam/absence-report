@@ -81,7 +81,7 @@ function getAbsenceEvents(startTime, endTime) {
       orderBy: 'startTime',
     });
 
-    // If nothing find, move to next calendar
+    // If nothing is found, move to next calendar
     if (!(events.items && events.items.length > 0)) {
       continue;
     }
@@ -116,7 +116,7 @@ function getAbsenceEvents(startTime, endTime) {
   return Object.values(teamAbsence);
 }
 
-/** get the HTML content of the email message about the absence report */
+/** Get the HTML content of the email message about the absence report */
 function formatEmail(startTime, absences) {
   let description = []
   if (absences.length === 0) {
@@ -148,7 +148,7 @@ function formatEmail(startTime, absences) {
 
     description = [
       "Here is the team absence report for the next time period.",
-      "Yellow is vacation, Green is back on track.",
+      "Yellow is vacation, Green is available.",
       htmlTable,
     ]
   }
@@ -164,7 +164,7 @@ function formatEmail(startTime, absences) {
 function sendEmailNotifications(startTime, endTime, absences) {
   const message = formatEmail(startTime, absences)
   console.log("Message", message)
-  const subject = EMAIL_SUBJECT + ` (${dateToYMD(startTime)} - ${getEndDate(endTime)})`
+  const subject = `${EMAIL_SUBJECT} (${dateToYMD(startTime)} - ${getEndDate(endTime)})`
   console.log(`You can send ${MailApp.getRemainingDailyQuota()} mails today.`)
   NOTIFICATION_MAIL_ADDRESSES.forEach(emailAddress => {
     MailApp.sendEmail({
