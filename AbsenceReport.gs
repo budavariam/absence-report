@@ -121,7 +121,7 @@ function formatEmail(startTime, absences) {
   let description = []
   if (absences.length === 0) {
     description = [
-      "The team is fully operating in this time period!"
+      "Everyone is on board in this time period!"
     ]
   } else {
     const header = ["Name"]
@@ -130,26 +130,35 @@ function formatEmail(startTime, absences) {
       header.push(curr)
     }
 
-    htmlTable = [
-      `<table border="1">`,
-      `<thead>`,
-      `  <tr>${header.map(item => `<td>${item}</td>`).join("")}</tr>`,
-      `</thead>`,
-      `<tbody>`,
-      absences.map(line => [
-        "<tr>",
-        `<td>${line.nick}</td>`,
-        line.absences.map((isAbsent) => `<td style="background-color:${isAbsent ? "yellow" : "green"}">${isAbsent ? "." : ""}</td>`).join(""),
-        "</tr>"
-      ].join("")).join(""),
-      `</tbody>`,
-      `</table>`,
-    ].join("")
+    htmlTableBlock = TEAM_LIST.map((currentTeamName) => {
+      const memberList = absences.filter(member => member.team === currentTeamName)
+      if (memberList.length === 0) {
+        return ""
+      } 
+      return [
+        `<p>`,
+        `<h3>${currentTeamName}</h3>`,
+        `<table border="1">`,
+        `<thead>`,
+        `  <tr>${header.map(item => `<td>${item}</td>`).join("")}</tr>`,
+        `</thead>`,
+        `<tbody>`,
+        memberList.map(line => [
+          "<tr>",
+          `<td>${line.nick}</td>`,
+          line.absences.map((isAbsent) => `<td style="background-color:${isAbsent ? "yellow" : "green"}">${isAbsent ? "." : ""}</td>`).join(""),
+          "</tr>"
+        ].join("")).join(""),
+        `</tbody>`,
+        `</table>`,
+        `</p>`
+      ].join("")
+    }).join("")
 
     description = [
       "Here is the team absence report for the next time period.",
       "Yellow is vacation, Green is available.",
-      htmlTable,
+      htmlTableBlock,
     ]
   }
 
