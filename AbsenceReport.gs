@@ -105,7 +105,7 @@ function getAbsenceEvents(startTime, endTime) {
             ? record.absences[i]
             : isAbsent
           if (isAbsent) {
-            console.log(`${record.nick} is on vacation on ${curr}`)
+            console.log(`${record.nick || record.name} is on vacation on ${curr}`)
           }
         }
         teamAbsence[person.name] = record
@@ -130,14 +130,14 @@ function formatEmail(startTime, absences) {
       header.push(curr)
     }
 
-    htmlTableBlock = TEAM_LIST.map((currentTeamName) => {
+    htmlTableBlock = [undefined].concat(TEAM_LIST).map((currentTeamName) => {
       const memberList = absences.filter(member => member.team === currentTeamName)
       if (memberList.length === 0) {
         return ""
       } 
       return [
         `<p>`,
-        `<h3>${currentTeamName}</h3>`,
+        `<h3>${currentTeamName || "Team"}</h3>`,
         `<table border="1">`,
         `<thead>`,
         `  <tr>${header.map(item => `<td>${item}</td>`).join("")}</tr>`,
@@ -145,7 +145,7 @@ function formatEmail(startTime, absences) {
         `<tbody>`,
         memberList.map(line => [
           "<tr>",
-          `<td>${line.nick}</td>`,
+          `<td>${line.nick || line.name}</td>`,
           line.absences.map((isAbsent) => `<td style="background-color:${isAbsent ? "yellow" : "green"}">${isAbsent ? "." : ""}</td>`).join(""),
           "</tr>"
         ].join("")).join(""),
