@@ -1,5 +1,15 @@
 {
     "files.associations": {
         "*.gs": "javascript"
-    }
+    },
+    "workbench.colorCustomizations": {
+        "activityBar.activeBackground": "#f0af85",
+        "activityBar.activeBorder": "#118e42",
+        "activityBar.background": "#f0af85",
+        "activityBar.foreground": "#15202b",
+        "activityBar.inactiveForeground": "#15202b99",
+        "activityBarBadge.background": "#118e42",
+        "activityBarBadge.foreground": "#e7e7e7"
+    },
+    "peacock.color": "#ea9158"
 }
