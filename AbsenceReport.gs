@@ -25,6 +25,7 @@ const SENDER_NAME = "Absence Report Bot"
 // ----------------------------------------------------------------------------
 // DO NOT TOUCH FROM HERE ON
 // ----------------------------------------------------------------------------
+const DEBUG_DAY_CNT = 0; // to see how things would be n days ago
 const NAME_LIST_MAP = PEOPLE.reduce((acc, curr, i) => { acc[curr.name] = i; return acc }, {})
 const TEAM_LIST = Object.keys(PEOPLE.reduce((acc, curr) => { acc[curr.team] = 1; return acc }, {})).sort()
 
@@ -53,7 +54,10 @@ function betweenDateStrings(checkDateStr, fromDateStr, toDateStr) {
   const f = new Date(fromDateStr)
   const c = new Date(checkDateStr)
   const t = new Date(toDateStr)
-  return (c >= f) && (c <= t)
+
+  return EVENT_END_DATE_SHOULD_BE_INCLUDED
+    ? (c >= f) && (c <= t) // should include end day
+    : (c >= f) && (c < t) // should not include end day
 }
 
 /** In our calendar endDate is nonInclusive, but we might need it */
@@ -187,8 +191,9 @@ function sendEmailNotifications(startTime, endTime, absences) {
 
 /** App entry point */
 function SendAbsenceReport() {
-  const startTime = new Date();
-  startTime.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const startTime = dayDiff(today, -DEBUG_DAY_CNT)
   const endTime = dayDiff(startTime, DAYS_TO_SYNC)
   const absences = getAbsenceEvents(startTime, endTime)
   sendEmailNotifications(startTime, endTime, absences)
