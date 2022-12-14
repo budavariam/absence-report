@@ -161,7 +161,7 @@ function formatEmail(startTime, absences) {
       header.push(curr)
     }
 
-    htmlTableBlock = [undefined].concat(TEAM_LIST).map((currentTeamName) => {
+    const htmlTableBlock = [undefined].concat(TEAM_LIST).map((currentTeamName) => {
       const memberList = absences.filter(member => member.team === currentTeamName)
       if (memberList.length === 0) {
         return ""
