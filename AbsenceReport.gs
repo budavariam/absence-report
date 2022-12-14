@@ -21,6 +21,9 @@ const EVENT_END_DATE_SHOULD_BE_INCLUDED = false
 const EMAIL_SUBJECT = `Absence Report`
 // Name that should appear as sender
 const SENDER_NAME = "Absence Report Bot"
+const EXPORT_TO_DRIVE_PATH = null;
+// const EXPORT_TO_DRIVE_PATH = "absences.json"
+const SEND_MAIL = true
 
 // ----------------------------------------------------------------------------
 // DO NOT TOUCH FROM HERE ON
@@ -28,7 +31,7 @@ const SENDER_NAME = "Absence Report Bot"
 const DEBUG_DAY_CNT = 0; // to see how things would be n days ago
 const NAME_LIST_MAP = PEOPLE.reduce((acc, curr, i) => { acc[curr.name] = i; return acc }, {})
 const TEAM_LIST = Object.keys(PEOPLE.reduce((acc, curr) => { acc[curr.team] = 1; return acc }, {})).sort()
-
+let debugNames = []
 /** Print Date object as string in YYYY-MM-DD format */
 function dateToYMD(date) {
   const y = date.getFullYear();
@@ -65,8 +68,31 @@ function getEndDate(endDate) {
   return dateToYMD(dayDiff(endDate, EVENT_END_DATE_SHOULD_BE_INCLUDED ? 0 : -1))
 }
 
+function getEvents(calendarId, startTime, endTime) {
+  let eventList = []
+  let pageToken = null
+  while (pageToken !== undefined) {
+    const events = Calendar.Events.list(calendarId, {
+        timeMin: startTime.toISOString(),
+        timeMax: endTime.toISOString(),
+        singleEvents: true,
+        maxResults: 2000,
+        orderBy: 'startTime',
+        pageToken: pageToken, 
+      });
+    console.log(`Got ${events.items.length} events.`)
+    eventList = eventList.concat(events.items)
+    if ("nextPageToken" in events) {
+      pageToken = events.nextPageToken
+    } else {
+      break;
+    }
+  }
+  return {items: eventList}
+}
+
 /** Return the list of users with their absence records for the next time period */
-function getAbsenceEvents(startTime, endTime) {
+function getAbsenceEvents(startTime, endTime, sync_day_cnt) {
   const teamAbsence = {}
   for (let calendarName in SOURCE_CALENDARS) {
     const calendarId = SOURCE_CALENDARS[calendarName];
@@ -78,13 +104,13 @@ function getAbsenceEvents(startTime, endTime) {
     }
 
     // Find events
-    const events = Calendar.Events.list(calendarId, {
-      timeMin: startTime.toISOString(),
-      timeMax: endTime.toISOString(),
-      singleEvents: true,
-      orderBy: 'startTime',
-    });
+    const events = getEvents(calendarId, startTime, endTime)
 
+    if (EXPORT_TO_DRIVE_PATH) {
+      const evts = JSON.stringify(events)
+      console.log(`File saved to ${EXPORT_TO_DRIVE_PATH}`)
+      DriveApp.createFile(EXPORT_TO_DRIVE_PATH,evts);
+    }
     // If nothing is found, move to next calendar
     if (!(events.items && events.items.length > 0)) {
       continue;
@@ -92,6 +118,7 @@ function getAbsenceEvents(startTime, endTime) {
     events.items.forEach((event) => {
       // The event name format is: 'LastName Firstname - Reason'
       const name = event.summary.split(" - ")[0]
+      debugNames.push(name)
       if (name in NAME_LIST_MAP) {
         // Only get those users who we listed in NAME_LIST_MAP
         const person = PEOPLE[NAME_LIST_MAP[name]]
@@ -101,7 +128,7 @@ function getAbsenceEvents(startTime, endTime) {
             ...person,
             absences: [],
           }
-        for (let i = 0; i < DAYS_TO_SYNC; i++) {
+        for (let i = 0; i < sync_day_cnt; i++) {
           const curr = dateToYMD(dayDiff(startTime, i))
           const isAbsent = betweenDateStrings(curr, event.start.date, event.end.date)
           console.log("Debug:", curr, record)
@@ -175,6 +202,10 @@ function formatEmail(startTime, absences) {
 
 /** Send email notifications */
 function sendEmailNotifications(startTime, endTime, absences) {
+  if (!SEND_MAIL) {
+    console.log("Skip mail sending as per config")
+    return
+  }
   const message = formatEmail(startTime, absences)
   console.log("Message", message)
   const subject = `${EMAIL_SUBJECT} (${dateToYMD(startTime)} - ${getEndDate(endTime)})`
@@ -189,12 +220,44 @@ function sendEmailNotifications(startTime, endTime, absences) {
   })
 }
 
+function printReport() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const sync_day_cnt = 20
+  const startTime = dayDiff(today, 10)
+  const endTime = dayDiff(today, sync_day_cnt)
+  const absences = getAbsenceEvents(startTime, endTime, sync_day_cnt)
+  console.log(absences)
+  const header = ["Name"]
+  for (let i = 0; i < sync_day_cnt; i++) {
+    const curr = dateToMD(dayDiff(startTime, i))
+    header.push(curr)
+  }
+  const data = [].concat(TEAM_LIST).map((currentTeamName) => {
+      const memberList = absences.filter(member => member.team === currentTeamName)
+      if (memberList.length === 0) {
+        return ""
+      } 
+      return [
+        `## Team ${currentTeamName || "Team"}`,
+        `${header.map(item => `${item} | `).join("")}`,
+        `${header.map(item => `---- | `).join("")}`,
+        ...memberList.map(line => [
+          `${line.nick || line.name} |`,
+          line.absences.map((isAbsent) => `${isAbsent ? "-" : ""}|`).join(""),
+        ].join(""))
+      ]
+    }).filter(e => e)
+    console.log(data)
+    console.log(debugNames)
+}
+
 /** App entry point */
 function SendAbsenceReport() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const startTime = dayDiff(today, -DEBUG_DAY_CNT)
   const endTime = dayDiff(startTime, DAYS_TO_SYNC)
-  const absences = getAbsenceEvents(startTime, endTime)
+  const absences = getAbsenceEvents(startTime, endTime, DAYS_TO_SYNC)
   sendEmailNotifications(startTime, endTime, absences)
 }
